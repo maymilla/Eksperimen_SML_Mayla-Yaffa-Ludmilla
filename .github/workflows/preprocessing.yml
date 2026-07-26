@@ -1,0 +1,42 @@
+name: Preprocessing - Auto Data Pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "breast_cancer_raw/**"
+      - "preprocessing/automate_Mayla.py"
+  workflow_dispatch: {}
+
+jobs:
+  preprocess:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # dibutuhkan untuk commit dataset hasil preprocessing balik ke repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12.7"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas==2.2.3 scikit-learn==1.5.2 numpy==1.26.4
+
+      - name: Run automated preprocessing
+        run: |
+          python preprocessing/automate_Mayla.py
+
+      - name: Commit refreshed preprocessed dataset back to repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -f preprocessing/namadataset_preprocessing
+          git diff --cached --quiet && echo "Tidak ada perubahan dataset, skip commit." || \
+            git commit -m "ci: refresh preprocessed dataset [skip ci]"
+          git push
